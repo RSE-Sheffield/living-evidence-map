@@ -15,7 +15,7 @@ library(tidyr)
 library(stringr)
 library(readr)
 
-### scraper function (move to separate module!!)
+### scraper functions (move to separate module!!)
 ScrapeQuery <- function(qyear,qkeyword){
   
   # build url
@@ -86,6 +86,7 @@ ui <- navbarPage(theme = 'mainpage.css',"Living evidence map",
                                      h3("Summary Information"),
                                      h5("Based on Keyword"),
                                      tableOutput("sumTable"),
+                                     textOutput("plotdf"),
                                      plotlyOutput("heatmapPlot")
                                      
                                      
@@ -117,44 +118,93 @@ ui <- navbarPage(theme = 'mainpage.css',"Living evidence map",
 # Define server logic 
 server <- function(input, output) {
   
+    ## data frames from scrapers
     testscrape<- eventReactive(input$QueryVal,{
-      data.frame(ScrapeQuery('2016',input$QueryVal))}) # replace 2016 w DateVal
+      data.frame(ScrapeQuery(daterange[5],input$QueryVal))}) # replace ateVal
     resnum<- eventReactive(input$QueryVal,{
       if (input$QueryVal == "")
         return(0)
       isolate({
-      res<-data.frame(NumResQuery('2016',input$QueryVal))
+      res<-data.frame(NumResQuery(daterange[5],input$QueryVal))
       res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
       res3<-gsub(".*About (.+) results.*", "\\1", res2)
       res4<-as.numeric(parse_number(res3))
       })
       })
     
+    ## static table dates for testing - should be changed to user input variables?
+
+    daterange<- ({
+      c(2015,2016,2017,2018,2019,2020)
+    })
+    #print(daterange[5])
+    
+    # needs cleaning up
     output$results<- eventReactive(input$QueryVal,{
       if (input$QueryVal == "")
         return(0)
       isolate({
-        res<-data.frame(NumResQuery('2016',input$QueryVal))
+        res<-data.frame(NumResQuery(daterange[5],input$QueryVal))
         res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
         res3<-gsub(".*About (.+) results.*", "\\1", res2)
         res4<-as.numeric(parse_number(res3))
       })
     })
-    # replace 2016 w DateVal
+    # replace DateVal
     
-  ## main table
+    
+  ## main table of titles
     output$sumTable <- renderTable({
       if (input$QueryVal == "")
         return(0)
-      isolate({ScrapeQuery('2016',input$QueryVal)}) # replace 2016 w DateVal
+      isolate({ScrapeQuery(daterange[5],input$QueryVal)}) # replace DateVal
       
     },width = '80%', rownames = TRUE, colnames = FALSE)
     
+    # data frame for plot
+    # causing http 429 error - google scholar only?
+    resdf<- eventReactive(input$QueryVal,{
+      if (input$QueryVal == "")
+        return(0)
+      isolate({
+        listvals<-list()
+        for (k in 1:1){
+          res<-data.frame(NumResQuery(daterange[k],"grinding"))
+          res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
+          res3<-gsub(".*About (.+) results.*", "\\1", res2)
+          res4<-as.numeric(parse_number(res3))
+          listvals[k]<-(res4)
+          print(res4)
+        }
+
+      })
+    })
+
+
+      print(listvals)
+    output$plotdf<- renderText({
+      if (input$QueryVal == "")
+        return(0)
+      isolate({
+        listvals<-list()
+        for (k in 1:5){
+          res<-data.frame(NumResQuery(daterange[k],"grinding"))
+          res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
+          res3<-gsub(".*About (.+) results.*", "\\1", res2)
+          res4<-as.numeric(parse_number(res3))
+          listvals[k]<-(res4)
+          print(res4)
+        }
+        
+      })
+    })
+    
+    # plot formatting to be fixed - bubble chart in table format better?
     output$heatmapPlot <- renderPlotly({
       if (input$QueryVal == "")
         return(0)
       isolate({
-        plot_ly(x = input$QueryVal, y = "2000", z = resnum(), type = "heatmap") # caps NROW req.for map is testscrape row number used for z
+        plot_ly(x = input$QueryVal, y = daterange, z = resnum(), type = "heatmap") # caps NROW req.for map is testscrape row number used for z
       })
     })
     
