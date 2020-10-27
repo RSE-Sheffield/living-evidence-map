@@ -120,12 +120,12 @@ server <- function(input, output) {
   
     ## data frames from scrapers
     testscrape<- eventReactive(input$QueryVal,{
-      data.frame(ScrapeQuery(daterange[5],input$QueryVal))}) # replace ateVal
+      data.frame(ScrapeQuery(input$DateVal,input$QueryVal))}) # replace ateVal
     resnum<- eventReactive(input$QueryVal,{
       if (input$QueryVal == "")
         return(0)
       isolate({
-      res<-data.frame(NumResQuery(daterange[5],input$QueryVal))
+      res<-data.frame(NumResQuery(input$DateVal,input$QueryVal))
       res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
       res3<-gsub(".*About (.+) results.*", "\\1", res2)
       res4<-as.numeric(parse_number(res3))
@@ -144,59 +144,35 @@ server <- function(input, output) {
       if (input$QueryVal == "")
         return(0)
       isolate({
-        res<-data.frame(NumResQuery(daterange[5],input$QueryVal))
+        res<-data.frame(NumResQuery(input$DateVal,input$QueryVal))
         res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
         res3<-gsub(".*About (.+) results.*", "\\1", res2)
         res4<-as.numeric(parse_number(res3))
       })
     })
-    # replace DateVal
     
     
   ## main table of titles
     output$sumTable <- renderTable({
       if (input$QueryVal == "")
         return(0)
-      isolate({ScrapeQuery(daterange[5],input$QueryVal)}) # replace DateVal
+      isolate({ScrapeQuery(input$DateVal,input$QueryVal)}) # replace DateVal
       
     },width = '80%', rownames = TRUE, colnames = FALSE)
     
-    # data frame for plot
-    # causing http 429 error - google scholar only?
-    resdf<- eventReactive(input$QueryVal,{
-      if (input$QueryVal == "")
-        return(0)
-      isolate({
-        listvals<-list()
-        for (k in 1:1){
-          res<-data.frame(NumResQuery(daterange[k],"grinding"))
-          res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
-          res3<-gsub(".*About (.+) results.*", "\\1", res2)
-          res4<-as.numeric(parse_number(res3))
-          listvals[k]<-(res4)
-          print(res4)
-        }
 
-      })
-    })
-
-
-      print(listvals)
     output$plotdf<- renderText({
       if (input$QueryVal == "")
         return(0)
       isolate({
-        listvals<-list()
-        for (k in 1:5){
-          res<-data.frame(NumResQuery(daterange[k],"grinding"))
+          res<-data.frame(NumResQuery(input$DateVal,"grinding"))
           res2<-str_extract(res, "About\\s*(.*?)\\s*results") 
           res3<-gsub(".*About (.+) results.*", "\\1", res2)
           res4<-as.numeric(parse_number(res3))
-          listvals[k]<-(res4)
           print(res4)
-        }
+        })
         
-      })
+      
     })
     
     # plot formatting to be fixed - bubble chart in table format better?
